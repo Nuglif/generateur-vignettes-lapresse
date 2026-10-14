@@ -2,51 +2,507 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Générateur de Vignettes - La Presse</title>
-    <!-- Import de la police Verlag (ou alternative Verlag-like Bold) -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LABO – Générateur de vignettes</title>
+    <!-- Librairie pour l'exportation PNG -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
-        body { font-family: Arial, sans-serif; display: flex; gap: 30px; padding: 20px; background: #f0f2f5; }
-        .controls { width: 350px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .controls label { display: block; margin-top: 15px; margin-bottom: 8px; font-weight: bold; }
-        .controls textarea, .controls input { width: 100%; padding: 8px; box-sizing: border-box; }
-
-        .preview-container { position: relative; width: 600px; height: 750px; background: #ddd; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        #bg-image { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
-        
-        #logo { position: absolute; top: 25px; right: 25px; width: 65px; height: 65px; object-fit: contain; }
-
-        .text-box {
-            position: absolute; bottom: 55px; left: 55px; right: 55px;
-            display: flex; flex-direction: column; align-items: flex-start; gap: 0px;
+        /* Déclaration de la vraie police Verlag Black locale */
+        @font-face {
+            font-family: 'Verlag-Bold';
+            src: url('Verlag Black.otf') format('opentype');
+            font-weight: 900;
+            font-style: normal;
         }
 
-        /* Surtitre en Verlag Bold (25px) */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #f0f2f5; 
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 80px 20px 40px 20px;
+            position: relative;
+        }
+
+        /* Titre en haut à gauche */
+        .app-title {
+            position: fixed;
+            top: 21px;
+            left: 20px;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 18px;
+            color: #111111;
+            z-index: 800;
+            line-height: 44px;
+        }
+
+        /* Bouton coin supérieur droit (Menu principal) */
+        .top-right-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 1000;
+            font-size: 20px;
+            font-weight: bold;
+            color: #333333;
+        }
+
+        .top-right-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .top-right-btn img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
+
+        .top-right-btn.is-active img {
+            display: none;
+        }
+
+        .top-right-btn.is-active::after {
+            content: '✕';
+            font-family: Arial, sans-serif;
+            font-size: 22px;
+            color: #333333;
+            line-height: 1;
+        }
+
+        /* MENU OVERLAY PLEIN ÉCRAN */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(225, 0, 26, 0.85);
+            z-index: 900;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .menu-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .menu-options {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            width: 100%;
+            max-width: 800px;
+            padding: 0 20px;
+        }
+
+        .menu-title {
+            font-family: 'Verlag-Bold', 'Verlag', sans-serif;
+            font-size: 42px;
+            font-weight: 900;
+            color: #FFFFFF;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            cursor: default;
+            user-select: none;
+            margin-bottom: 20px;
+        }
+
+        .menu-divider {
+            width: 100%;
+            height: 2px;
+            background-color: #FFFFFF;
+            opacity: 0.5;
+            border: none;
+            margin-bottom: 40px;
+        }
+
+        .menu-items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            width: 100%;
+        }
+
+        .menu-item {
+            font-family: 'Verlag-Bold', 'Verlag', sans-serif;
+            font-size: 48px;
+            font-weight: 900;
+            color: #FFFFFF;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            user-select: none;
+        }
+
+        .menu-item:hover {
+            transform: scale(1.04);
+            opacity: 0.9;
+        }
+
+        /* Conteneur principal */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .format-tabs {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: #ffffff;
+            border: 1px solid #dcdcdc;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #333333;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .tab-btn:hover {
+            background: #f8f8f8;
+            border-color: #bbbbbb;
+        }
+
+        .tab-btn.active {
+            background: #E1001A;
+            color: #ffffff;
+            border-color: #E1001A;
+            box-shadow: 0 3px 8px rgba(225, 0, 26, 0.3);
+        }
+
+        .divider {
+            width: 980px;
+            height: 2px;
+            background-color: #e0e0e0;
+            border: none;
+        }
+
+        .workspace {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        .controls { 
+            width: 350px; 
+            background: white; 
+            padding: 24px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+        }
+
+        .controls h3 {
+            font-size: 20px;
+            font-weight: bold;
+            color: #111;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .controls label { 
+            display: block; 
+            margin-top: 15px; 
+            margin-bottom: 8px; 
+            font-weight: bold; 
+            font-size: 14px;
+            color: #333;
+        }
+
+        .controls input[type="text"], 
+        .controls select,
+        .controls textarea { 
+            width: 100%; 
+            padding: 10px; 
+            box-sizing: border-box; 
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+            background-color: #fff;
+        }
+
+        .file-upload-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #FFFFFF;
+            color: #333333;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .file-upload-btn:hover {
+            background-color: #f8f8f8;
+            border-color: #bbbbbb;
+        }
+
+        .file-name-display {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #666;
+            word-break: break-all;
+        }
+
+        .btn-export {
+            margin-top: 8px;
+            width: 100%;
+            padding: 12px;
+            background-color: #E1001A;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .btn-export:hover {
+            background-color: #b80015;
+        }
+
+        .btn-export:active {
+            transform: scale(0.99);
+        }
+
+        /* Zone de prévisualisation */
+        .preview-container { 
+            position: relative; 
+            background-color: #969ca4; 
+            overflow: hidden; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        /* Dimensions d'aperçu */
+        .preview-container.tiktok { width: 558px; height: 750px; }       
+        .preview-container.appli { width: 422px; height: 750px; }        
+        .preview-container.youtube { width: 800px; height: 450px; }      
+
+        #bg-image { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: fill; /* Stretch par défaut */
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            display: none; 
+        }
+
+        /* Dégradé spécifique au format YouTube : noir 50% bas vers 0% haut */
+        .youtube-gradient {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.50) 0%, rgba(0, 0, 0, 0) 60%);
+            z-index: 5;
+            display: none;
+            pointer-events: none;
+        }
+
+        .preview-container.youtube .youtube-gradient {
+            display: block;
+        }
+        
+        #logo { 
+            position: absolute; 
+            top: 25px; 
+            right: 25px; 
+            width: 65px; 
+            height: 65px; 
+            object-fit: contain; 
+            z-index: 10;
+            display: block;
+        }
+
+        /* Masquer le logo sur TikTok et Appli */
+        .preview-container.tiktok #logo,
+        .preview-container.appli #logo {
+            display: none;
+        }
+
+        /* YOUTUBE LOGO : 85px x 85px, top/right 25px */
+        .preview-container.youtube #logo {
+            display: block;
+            top: 25px;
+            right: 25px;
+            width: 85px;
+            height: 85px;
+        }
+
+        .text-box {
+            position: absolute; 
+            display: block;
+            z-index: 10;
+            transition: all 0.2s ease;
+        }
+
+        /* Marges de positionnement */
+        .preview-container.tiktok .text-box {
+            left: 47.3px;    
+            bottom: 118.3px; 
+            right: 47.3px;
+        }
+
+        .preview-container.appli .text-box {
+            left: 39.1px;    
+            bottom: 189.5px; 
+            right: 39.1px;
+        }
+
+        /* YOUTUBE : Marges réduites (left: 20px / bottom: 20px) */
+        .preview-container.youtube .text-box {
+            left: 20px;
+            bottom: 20px;
+            right: 20px;
+            max-width: calc(100% - 40px);
+        }
+
         #surtitre-output {
-            font-family: 'Montserrat', 'Verlag', sans-serif;
-            font-weight: 700;
-            font-size: 25px;
+            font-family: 'Verlag-Bold', 'Verlag', sans-serif;
+            font-weight: 900;
+            font-size: 22px;
             color: #FFFFFF;
             background-color: #E1001A;
             padding: 4px 8px;
             display: none;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 3;
         }
 
-        /* Titre principal en Verlag Bold (40px) */
-        .title-line {
-            font-family: 'Montserrat', 'Verlag', sans-serif;
-            font-weight: 700;
-            font-size: 40px;
+        /* SURTITRE TIKTOK : Rehaussé à 14px */
+        .preview-container.tiktok #surtitre-output {
+            margin-bottom: 14px;
+        }
+
+        /* SURTITRE APPLI MOBILE : Remonté de 1px (passé de 6px à 7px) */
+        .preview-container.appli #surtitre-output {
+            margin-bottom: 7px;
+        }
+
+        /* SURTITRE YOUTUBE : Caps, sans shadow, sans fond rouge */
+        .preview-container.youtube #surtitre-output {
+            font-size: 36px;
+            text-transform: uppercase;
+            background-color: transparent;
+            padding: 0;
+            margin-bottom: 8px;
+            letter-spacing: 0.02em;
+            text-shadow: none;
+        }
+
+        .title-paragraph {
+            margin: 0;
+            padding: 0;
+        }
+
+        .title-text {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* TYPOGRAPHIE TIKTOK */
+        .preview-container.tiktok .title-line {
+            font-family: 'Verlag-Bold', 'Verlag', sans-serif;
+            font-weight: 900;
+            font-size: 48px;
+            line-height: 1.12;          
+            letter-spacing: -0.03em;
             color: #000000;
             background-color: #FFFFFF;
-            padding: 4px 8px;
+            padding: 17px 14px;
+            display: inline;
             box-decoration-break: clone;
             -webkit-box-decoration-break: clone;
-            letter-spacing: -1px;
         }
 
-        /* Style du curseur rouge */
+        /* TYPOGRAPHIE APPLI MOBILE */
+        .preview-container.appli .title-line {
+            font-family: 'Verlag-Bold', 'Verlag', sans-serif;
+            font-weight: 900;
+            font-size: 39px;            
+            line-height: 1.12;          
+            letter-spacing: -0.03em;
+            color: #000000;
+            background-color: #FFFFFF;
+            padding: 8px 5.5px;
+            display: inline;
+            box-decoration-break: clone;
+            -webkit-box-decoration-break: clone;
+        }
+
+        /* TYPOGRAPHIE YOUTUBE : Calibrée à 68px, sans ombre, sans fond blanc */
+        .preview-container.youtube .title-line {
+            font-family: 'Verlag-Bold', 'Verlag', sans-serif;
+            font-weight: 900;
+            font-size: 68px;
+            line-height: 72px;
+            color: #FFFFFF;
+            background-color: transparent;
+            padding: 0;
+            display: inline;
+            letter-spacing: -0.02em;
+            text-shadow: none;
+            box-decoration-break: slice;
+            -webkit-box-decoration-break: slice;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* Masquer le curseur rouge exclusivement sur YouTube */
+        .preview-container.youtube .cursor-l {
+            display: none;
+        }
+
         .cursor-l {
             color: #E1001A;
         }
@@ -54,42 +510,139 @@
 </head>
 <body>
 
-    <div class="controls">
-        <h3>Paramètres</h3>
-        <label>Surtitre (facultatif) :</label>
-        <input type="text" id="surtitreInput" placeholder="Ex: En direct">
+    <!-- Titre en haut à gauche -->
+    <div class="app-title">LABO – Générateur de vignettes</div>
 
-        <label>Titre principal :</label>
-        <textarea id="textInput" rows="3">C'est le temps d'essayer le curseur avec un seul espace.</textarea>
+    <!-- Bouton coin supérieur droit -->
+    <button class="top-right-btn" id="externalLinkBtn" title="Menu principal">
+        <img id="menuIcon" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQZfurc7kMRTB_grnCqlXceY4Ozc_fz6uAzojr-SK0NkGEqxNCqI-S2wAs&s=10" alt="Icône menu">
+    </button>
 
-        <label>Image de fond :</label>
-        <input type="file" id="imageUpload" accept="image/jpeg, image/png, image/webp">
+    <!-- MENU OVERLAY PLEIN ÉCRAN -->
+    <div class="menu-overlay" id="menuOverlay">
+        <div class="menu-options">
+            <div class="menu-title">Outils LABO</div>
+            <div class="menu-divider"></div>
+            <div class="menu-items-list">
+                <div class="menu-item" id="btnGoVignettes">Générateur de vignettes</div>
+                <div class="menu-item" id="btnGoPinterest">Générateur de contenu Pinterest</div>
+            </div>
+        </div>
     </div>
 
-    <div class="preview-container">
-        <img id="bg-image" src="https://picsum.photos/1080/1350" alt="Fond">
-        <img id="logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/2012_logo_for_La_Presse_newspaper.svg/960px-2012_logo_for_La_Presse_newspaper.svg.png" alt="Logo">
+    <div class="app-container">
         
-        <div class="text-box" id="output-container">
-            <span id="surtitre-output"></span>
+        <!-- Boutons de formats -->
+        <div class="format-tabs">
+            <button class="tab-btn" data-format="tiktok">TikTok</button>
+            <button class="tab-btn active" data-format="appli">Appli mobile</button>
+            <button class="tab-btn" data-format="youtube">YouTube</button>
         </div>
+
+        <!-- Filet séparateur -->
+        <div class="divider"></div>
+
+        <div class="workspace">
+            <div class="controls">
+                <h3>Paramètres</h3>
+                
+                <label for="surtitreInput">Surtitre :</label>
+                <input type="text" id="surtitreInput" placeholder="Ex: En direct">
+
+                <label for="textInput">Titre :</label>
+                <textarea id="textInput" rows="3" placeholder="Entrez le titre ici..."></textarea>
+
+                <label>Image de fond :</label>
+                <label for="imageUpload" class="file-upload-btn">Choisir un fichier</label>
+                <input type="file" id="imageUpload" accept="image/jpeg, image/png, image/webp" style="display: none;">
+                <div class="file-name-display" id="fileNameDisplay"></div>
+
+                <label for="imageAlignSelect">Alignement de l'image :</label>
+                <select id="imageAlignSelect">
+                    <option value="fill">stretch</option>
+                    <option value="contain">shrink to fit</option>
+                    <option value="cover">expand to fill</option>
+                </select>
+
+                <label>Enregistrer l'image :</label>
+                <button class="btn-export" id="downloadBtn">Exporter</button>
+            </div>
+
+            <div class="preview-container appli" id="previewContainer">
+                <div class="youtube-gradient"></div>
+                <img id="bg-image" alt="Fond">
+                <img id="logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/2012_logo_for_La_Presse_newspaper.svg/960px-2012_logo_for_La_Presse_newspaper.svg.png" alt="Logo">
+                
+                <div class="text-box" id="output-container">
+                    <span id="surtitre-output"></span>
+                </div>
+            </div>
+        </div>
+
     </div>
 
 <script>
     const imageUpload = document.getElementById('imageUpload');
     const bgImage = document.getElementById('bg-image');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const imageAlignSelect = document.getElementById('imageAlignSelect');
     const surtitreInput = document.getElementById('surtitreInput');
     const surtitreOutput = document.getElementById('surtitre-output');
     const textInput = document.getElementById('textInput');
     const outputContainer = document.getElementById('output-container');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const previewContainer = document.getElementById('previewContainer');
+    const tabButtons = document.querySelectorAll('.tab-btn');
+
+    const externalLinkBtn = document.getElementById('externalLinkBtn');
+    const menuOverlay = document.getElementById('menuOverlay');
+    const btnGoVignettes = document.getElementById('btnGoVignettes');
+    const btnGoPinterest = document.getElementById('btnGoPinterest');
+
+    function toggleMenu() {
+        const isOpen = menuOverlay.classList.toggle('open');
+        externalLinkBtn.classList.toggle('is-active', isOpen);
+    }
+
+    externalLinkBtn.addEventListener('click', toggleMenu);
+
+    btnGoVignettes.addEventListener('click', () => {
+        menuOverlay.classList.remove('open');
+        externalLinkBtn.classList.remove('is-active');
+    });
+
+    btnGoPinterest.addEventListener('click', () => {
+        window.location.href = 'pinterest.html';
+    });
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            const format = button.getAttribute('data-format');
+            previewContainer.className = 'preview-container ' + format;
+        });
+    });
 
     imageUpload.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
+            fileNameDisplay.textContent = file.name;
             const reader = new FileReader();
-            reader.onload = (e) => bgImage.src = e.target.result;
+            reader.onload = (e) => {
+                bgImage.src = e.target.result;
+                bgImage.style.display = 'block';
+            };
             reader.readAsDataURL(file);
+        } else {
+            fileNameDisplay.textContent = '';
         }
+    });
+
+    // Gestion du mode d'alignement de l'image (stretch / shrink to fit / expand to fill)
+    imageAlignSelect.addEventListener('change', () => {
+        bgImage.style.objectFit = imageAlignSelect.value;
     });
 
     function updateText() {
@@ -102,29 +655,51 @@
         }
 
         let titleText = textInput.value.replace(/'/g, '’');
-        const lines = titleText.split('\n');
-
-        const existingLines = outputContainer.querySelectorAll('.title-line');
+        
+        const existingLines = outputContainer.querySelectorAll('.title-paragraph');
         existingLines.forEach(el => el.remove());
 
+        if (titleText.trim() === "") {
+            return;
+        }
+
+        const lines = titleText.split('\n');
+
         lines.forEach((line, index) => {
-            const div = document.createElement('div');
-            div.className = 'title-line';
-            
-            // Si c'est la dernière ligne, on ajoute un seul espace et le "l" minuscule rouge
+            const pDiv = document.createElement('div');
+            pDiv.className = 'title-paragraph';
+
+            const lineSpan = document.createElement('span');
+            lineSpan.className = 'title-line';
+
+            const textSpan = document.createElement('span');
+            textSpan.className = 'title-text';
+
             if (index === lines.length - 1) {
-                div.textContent = line;
+                textSpan.textContent = line;
                 const cursorSpan = document.createElement('span');
                 cursorSpan.className = 'cursor-l';
                 cursorSpan.textContent = '\u00A0l';
-                div.appendChild(cursorSpan);
+                textSpan.appendChild(cursorSpan);
             } else {
-                div.textContent = line;
+                textSpan.textContent = line;
             }
 
-            outputContainer.appendChild(div);
+            lineSpan.appendChild(textSpan);
+            pDiv.appendChild(lineSpan);
+            outputContainer.appendChild(pDiv);
         });
     }
+
+    // Export HD
+    downloadBtn.addEventListener('click', () => {
+        html2canvas(previewContainer, { useCORS: true, scale: 2.15 }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `vignette-lapresse-${document.querySelector('.tab-btn.active').dataset.format}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    });
 
     surtitreInput.addEventListener('input', updateText);
     textInput.addEventListener('input', updateText);
