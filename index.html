@@ -248,7 +248,6 @@
         }
 
         .controls input[type="text"], 
-        .controls select,
         .controls textarea { 
             width: 100%; 
             padding: 10px; 
@@ -257,7 +256,12 @@
             border-radius: 4px;
             font-family: inherit;
             font-size: 14px;
-            background-color: #fff;
+        }
+
+        .controls input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #E1001A;
         }
 
         .file-upload-btn {
@@ -288,8 +292,19 @@
             word-break: break-all;
         }
 
+        .instruction-note {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666666;
+            line-height: 1.4;
+            background: #f8f9fa;
+            padding: 8px 10px;
+            border-radius: 4px;
+            border-left: 3px solid #E1001A;
+        }
+
         .btn-export {
-            margin-top: 8px;
+            margin-top: 15px;
             width: 100%;
             padding: 12px;
             background-color: #E1001A;
@@ -317,7 +332,7 @@
             overflow: hidden; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
             border-radius: 4px;
-            transition: all 0.3s ease;
+            transition: background-color 0.3s ease, width 0.3s ease, height 0.3s ease;
         }
 
         /* Dimensions d'aperçu */
@@ -325,17 +340,28 @@
         .preview-container.appli { width: 422px; height: 750px; }        
         .preview-container.youtube { width: 800px; height: 450px; }      
 
+        /* IMAGE DE FOND */
         #bg-image { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: fill; /* Stretch par défaut */
             position: absolute; 
-            top: 0; 
-            left: 0; 
+            top: 50%; 
+            left: 50%; 
+            min-width: 100%; 
+            min-height: 100%; 
+            width: auto; 
+            height: auto; 
+            max-width: none;
+            max-height: none;
             display: none; 
+            cursor: grab;
+            user-select: none;
+            transform-origin: center center;
         }
 
-        /* Dégradé spécifique au format YouTube : noir 50% bas vers 0% haut */
+        #bg-image:active {
+            cursor: grabbing;
+        }
+
+        /* Dégradé spécifique au format YouTube */
         .youtube-gradient {
             position: absolute;
             top: 0;
@@ -361,6 +387,7 @@
             object-fit: contain; 
             z-index: 10;
             display: block;
+            pointer-events: none;
         }
 
         /* Masquer le logo sur TikTok et Appli */
@@ -369,7 +396,7 @@
             display: none;
         }
 
-        /* YOUTUBE LOGO : 85px x 85px, top/right 25px */
+        /* YOUTUBE LOGO : 85px x 85px */
         .preview-container.youtube #logo {
             display: block;
             top: 25px;
@@ -382,6 +409,7 @@
             position: absolute; 
             display: block;
             z-index: 10;
+            pointer-events: none;
             transition: all 0.2s ease;
         }
 
@@ -398,7 +426,6 @@
             right: 39.1px;
         }
 
-        /* YOUTUBE : Marges réduites (left: 20px / bottom: 20px) */
         .preview-container.youtube .text-box {
             left: 20px;
             bottom: 20px;
@@ -419,17 +446,14 @@
             z-index: 3;
         }
 
-        /* SURTITRE TIKTOK : Rehaussé à 14px */
         .preview-container.tiktok #surtitre-output {
             margin-bottom: 14px;
         }
 
-        /* SURTITRE APPLI MOBILE : Remonté de 1px (passé de 6px à 7px) */
         .preview-container.appli #surtitre-output {
             margin-bottom: 7px;
         }
 
-        /* SURTITRE YOUTUBE : Caps, sans shadow, sans fond rouge */
         .preview-container.youtube #surtitre-output {
             font-size: 36px;
             text-transform: uppercase;
@@ -450,7 +474,6 @@
             z-index: 2;
         }
 
-        /* TYPOGRAPHIE TIKTOK */
         .preview-container.tiktok .title-line {
             font-family: 'Verlag-Bold', 'Verlag', sans-serif;
             font-weight: 900;
@@ -465,7 +488,6 @@
             -webkit-box-decoration-break: clone;
         }
 
-        /* TYPOGRAPHIE APPLI MOBILE */
         .preview-container.appli .title-line {
             font-family: 'Verlag-Bold', 'Verlag', sans-serif;
             font-weight: 900;
@@ -480,7 +502,6 @@
             -webkit-box-decoration-break: clone;
         }
 
-        /* TYPOGRAPHIE YOUTUBE : Calibrée à 68px, sans ombre, sans fond blanc */
         .preview-container.youtube .title-line {
             font-family: 'Verlag-Bold', 'Verlag', sans-serif;
             font-weight: 900;
@@ -498,7 +519,6 @@
             overflow-wrap: break-word;
         }
 
-        /* Masquer le curseur rouge exclusivement sur YouTube */
         .preview-container.youtube .cursor-l {
             display: none;
         }
@@ -557,12 +577,14 @@
                 <input type="file" id="imageUpload" accept="image/jpeg, image/png, image/webp" style="display: none;">
                 <div class="file-name-display" id="fileNameDisplay"></div>
 
-                <label for="imageAlignSelect">Alignement de l'image :</label>
-                <select id="imageAlignSelect">
-                    <option value="fill">stretch</option>
-                    <option value="contain">shrink to fit</option>
-                    <option value="cover">expand to fill</option>
-                </select>
+                <label for="zoomSlider">Zoom de l'image (<span id="zoomValueDisplay">100%</span>) :</label>
+
+                <!-- SLIDER PERMETTANT DE DÉZOOMER JUSQU'À 10% -->
+                <input type="range" id="zoomSlider" min="10" max="250" value="100" step="1">
+
+                <div class="instruction-note">
+                    <strong>Astuce :</strong> Ajustez le zoom (avant ou arrière) et glissez l'image dans le cadre pour la repositionner.
+                </div>
 
                 <label>Enregistrer l'image :</label>
                 <button class="btn-export" id="downloadBtn">Exporter</button>
@@ -585,7 +607,8 @@
     const imageUpload = document.getElementById('imageUpload');
     const bgImage = document.getElementById('bg-image');
     const fileNameDisplay = document.getElementById('fileNameDisplay');
-    const imageAlignSelect = document.getElementById('imageAlignSelect');
+    const zoomSlider = document.getElementById('zoomSlider');
+    const zoomValueDisplay = document.getElementById('zoomValueDisplay');
     const surtitreInput = document.getElementById('surtitreInput');
     const surtitreOutput = document.getElementById('surtitre-output');
     const textInput = document.getElementById('textInput');
@@ -598,6 +621,16 @@
     const menuOverlay = document.getElementById('menuOverlay');
     const btnGoVignettes = document.getElementById('btnGoVignettes');
     const btnGoPinterest = document.getElementById('btnGoPinterest');
+
+    // Déplacement 2D en pixels
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let currentX = 0, currentY = 0;
+    let zoomLevel = 1;
+
+    function applyImageTransform() {
+        bgImage.style.transform = `translate(-50%, -50%) translate(${currentX}px, ${currentY}px) scale(${zoomLevel})`;
+    }
 
     function toggleMenu() {
         const isOpen = menuOverlay.classList.toggle('open');
@@ -625,24 +658,57 @@
         });
     });
 
+    // GESTION DU ZOOM (Gère les valeurs de 10% à 250%)
+    zoomSlider.addEventListener('input', () => {
+        zoomLevel = zoomSlider.value / 100;
+        zoomValueDisplay.textContent = `${zoomSlider.value}%`;
+        applyImageTransform();
+    });
+
+    // GESTION DE L'UPLOAD & CHANGEMENT DE COULEUR DU FOND (#f15fdb)
     imageUpload.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
             fileNameDisplay.textContent = file.name;
+            previewContainer.style.backgroundColor = '#f15fdb';
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 bgImage.src = e.target.result;
                 bgImage.style.display = 'block';
+                // Réinitialiser la position et le zoom
+                currentX = 0;
+                currentY = 0;
+                zoomLevel = 1;
+                zoomSlider.value = 100;
+                zoomValueDisplay.textContent = '100%';
+                applyImageTransform();
             };
             reader.readAsDataURL(file);
         } else {
             fileNameDisplay.textContent = '';
+            previewContainer.style.backgroundColor = '#969ca4';
         }
     });
 
-    // Gestion du mode d'alignement de l'image (stretch / shrink to fit / expand to fill)
-    imageAlignSelect.addEventListener('change', () => {
-        bgImage.style.objectFit = imageAlignSelect.value;
+    // GLISSER-DÉPOSER DE L'IMAGE
+    bgImage.addEventListener('mousedown', (e) => {
+        if (bgImage.style.display === 'none' || !bgImage.src) return;
+        isDragging = true;
+        startX = e.clientX - currentX;
+        startY = e.clientY - currentY;
+        e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        currentX = e.clientX - startX;
+        currentY = e.clientY - startY;
+        applyImageTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+        isDragging = false;
     });
 
     function updateText() {
@@ -691,9 +757,13 @@
         });
     }
 
-    // Export HD
+    // EXPORT HD SANS DEFORMATION NI COINS ARRONDIS
     downloadBtn.addEventListener('click', () => {
+        previewContainer.style.borderRadius = '0px';
+
         html2canvas(previewContainer, { useCORS: true, scale: 2.15 }).then(canvas => {
+            previewContainer.style.borderRadius = '4px';
+
             const link = document.createElement('a');
             link.download = `vignette-lapresse-${document.querySelector('.tab-btn.active').dataset.format}.png`;
             link.href = canvas.toDataURL('image/png');
