@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LABO – Générateur de vignettes</title>
-    <!-- Librairie pour l'exportation PNG -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Librairie pour l'exportation PNG avec hash de sécurité SRI -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqoxUXRlvh51lZA0VIvhARqd6ECvkBD6yXvuupGl36250CXPcNLB3NDac-20d4gzEZCHgzUI14g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     
     <style>
         /* Déclaration de la vraie police Verlag Black locale */
@@ -226,7 +226,7 @@
             background: white; 
             padding: 24px; 
             border-radius: 8px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
         }
 
         .controls h3 {
@@ -331,7 +331,7 @@
             background-color: #969ca4; 
             overflow: hidden; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
-            border-radius: 4px;
+            border-radius: 7px;
             transition: background-color 0.3s ease, width 0.3s ease, height 0.3s ease;
         }
 
@@ -447,11 +447,11 @@
         }
 
         .preview-container.tiktok #surtitre-output {
-            margin-bottom: 14px;
+            margin-bottom: 15px;
         }
 
         .preview-container.appli #surtitre-output {
-            margin-bottom: 7px;
+            margin-bottom: 6px;
         }
 
         .preview-container.youtube #surtitre-output {
@@ -525,7 +525,20 @@
 
         .cursor-l {
             color: #E1001A;
+            display: inline-block;
+            transform: scaleX(0.8) scaleY(1.2) translateY(3px);
+            transform-origin: left center;
         }
+
+/* Faux italique pour la police Verlag Black avec espacement automatique */
+.title-line i, #surtitre-output i {
+    font-style: normal;
+    display: inline-block;
+    transform: skewX(-14deg);
+    -webkit-transform: skewX(-14deg);
+    transform-origin: center bottom;
+    padding-right: 0.15em; /* Marge de sécurité automatique pour compenser l'inclinaison */
+}
     </style>
 </head>
 <body>
@@ -535,7 +548,7 @@
 
     <!-- Bouton coin supérieur droit -->
     <button class="top-right-btn" id="externalLinkBtn" title="Menu principal">
-        <img id="menuIcon" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQZfurc7kMRTB_grnCqlXceY4Ozc_fz6uAzojr-SK0NkGEqxNCqI-S2wAs&s=10" alt="Icône menu">
+        <img id="menuIcon" src="images/imgbouton.png" alt="Icône menu">
     </button>
 
     <!-- MENU OVERLAY PLEIN ÉCRAN -->
@@ -544,8 +557,9 @@
             <div class="menu-title">Outils LABO</div>
             <div class="menu-divider"></div>
             <div class="menu-items-list">
-                <div class="menu-item" id="btnGoVignettes">Générateur de vignettes</div>
-                <div class="menu-item" id="btnGoPinterest">Générateur de contenu Pinterest</div>
+                <div class="menu-item" id="btnGoVignettes">Vignettes</div>
+                <div class="menu-item" id="btnGoPinterest">Pinterest</div>
+                <div class="menu-item" id="btnGoPinterest">Carrousel</div>
             </div>
         </div>
     </div>
@@ -572,6 +586,10 @@
                 <label for="textInput">Titre :</label>
                 <textarea id="textInput" rows="3" placeholder="Entrez le titre ici..."></textarea>
 
+                <div class="instruction-note">
+                    <strong>Astuce | </strong> Pour utiliser l'italique, balisez le texte de deux astérisques comme ceci : <code>*texte*</code>.
+                </div>
+
                 <label>Image de fond :</label>
                 <label for="imageUpload" class="file-upload-btn">Choisir un fichier</label>
                 <input type="file" id="imageUpload" accept="image/jpeg, image/png, image/webp" style="display: none;">
@@ -583,7 +601,7 @@
                 <input type="range" id="zoomSlider" min="10" max="250" value="100" step="1">
 
                 <div class="instruction-note">
-                    <strong>Astuce :</strong> Ajustez le zoom (avant ou arrière) et glissez l'image dans le cadre pour la repositionner.
+                    <strong>Astuce | </strong> Ajustez le zoom (avant ou arrière) et glissez l'image dans le cadre pour la repositionner.
                 </div>
 
                 <label>Enregistrer l'image :</label>
@@ -676,7 +694,6 @@
             reader.onload = (e) => {
                 bgImage.src = e.target.result;
                 bgImage.style.display = 'block';
-                // Réinitialiser la position et le zoom
                 currentX = 0;
                 currentY = 0;
                 zoomLevel = 1;
@@ -715,7 +732,8 @@
         let surtitreText = surtitreInput.value.replace(/'/g, '’');
         if (surtitreText.trim() !== "") {
             surtitreOutput.style.display = "inline-block";
-            surtitreOutput.textContent = surtitreText;
+            let parsedSurtitre = surtitreText.replace(/\*(.*?)\*/g, '<i>$1</i>');
+            surtitreOutput.innerHTML = parsedSurtitre;
         } else {
             surtitreOutput.style.display = "none";
         }
@@ -741,14 +759,16 @@
             const textSpan = document.createElement('span');
             textSpan.className = 'title-text';
 
+            let formattedLine = line.replace(/\*(.*?)\*/g, '<i>$1</i>');
+
             if (index === lines.length - 1) {
-                textSpan.textContent = line;
+                textSpan.innerHTML = formattedLine;
                 const cursorSpan = document.createElement('span');
                 cursorSpan.className = 'cursor-l';
                 cursorSpan.textContent = '\u00A0l';
                 textSpan.appendChild(cursorSpan);
             } else {
-                textSpan.textContent = line;
+                textSpan.innerHTML = formattedLine;
             }
 
             lineSpan.appendChild(textSpan);
@@ -762,7 +782,7 @@
         previewContainer.style.borderRadius = '0px';
 
         html2canvas(previewContainer, { useCORS: true, scale: 2.15 }).then(canvas => {
-            previewContainer.style.borderRadius = '4px';
+            previewContainer.style.borderRadius = '7px';
 
             const link = document.createElement('a');
             link.download = `vignette-lapresse-${document.querySelector('.tab-btn.active').dataset.format}.png`;

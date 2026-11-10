@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LABO – Générateur Pinterest</title>
-    <!-- Librairie pour l'exportation PNG -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Librairie pour l'exportation PNG avec hash de sécurité SRI -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqoxUXRlvh51lZA0VIvhARqd6ECvkBD6yXvuupGl36250CXPcNLB3NDac-20d4gzEZCHgzUI14g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     
     <style>
         /* Déclaration de la vraie police Verlag Black locale */
@@ -56,7 +56,7 @@
             border-radius: 50%;
             background-color: #ffffff;
             border: 1px solid #e0e0e0;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -70,7 +70,7 @@
 
         .top-right-btn:hover {
             transform: scale(1.05);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
         }
 
         .top-right-btn img {
@@ -223,10 +223,11 @@
 
         .controls { 
             width: 350px; 
-            background: white; 
+            background: #ffffff; 
             padding: 24px; 
-            border-radius: 8px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            border-radius: 12px; 
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08); 
         }
 
         .controls h3 {
@@ -260,6 +261,12 @@
             background-color: #fff;
         }
 
+        .controls input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #E1001A;
+        }
+
         .file-upload-btn {
             display: block;
             width: 100%;
@@ -288,8 +295,19 @@
             word-break: break-all;
         }
 
+        .instruction-note {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666666;
+            line-height: 1.4;
+            background: #f8f9fa;
+            padding: 8px 10px;
+            border-radius: 4px;
+            border-left: 3px solid #E1001A;
+        }
+
         .btn-export {
-            margin-top: 8px;
+            margin-top: 15px;
             width: 100%;
             padding: 12px;
             background-color: #E1001A;
@@ -315,9 +333,10 @@
             position: relative; 
             background-color: #969ca4; 
             overflow: hidden; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
-            border-radius: 4px;
-            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.12); 
+            border-radius: 6px;
+            transition: background-color 0.3s ease, width 0.3s ease, height 0.3s ease;
         }
 
         /* Dimensions d'aperçu Pinterest */
@@ -325,14 +344,25 @@
         .preview-container.standard { width: 450px; height: 675px; } /* Ratio 2:3 */
         .preview-container.vertical { width: 422px; height: 750px; } /* Ratio 9:16 */
 
+        /* IMAGE DE FOND */
         #bg-image { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
             position: absolute; 
-            top: 0; 
-            left: 0; 
+            top: 50%; 
+            left: 50%; 
+            min-width: 100%; 
+            min-height: 100%; 
+            width: auto; 
+            height: auto; 
+            max-width: none;
+            max-height: none;
             display: none; 
+            cursor: grab;
+            user-select: none;
+            transform-origin: center center;
+        }
+
+        #bg-image:active {
+            cursor: grabbing;
         }
 
         /* Dégradé bas : géré dynamiquement selon la présence de texte */
@@ -345,10 +375,10 @@
             background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0) 100%);
             z-index: 5;
             pointer-events: none;
-            display: none; /* Off par défaut */
+            display: none;
         }
 
-        /* LOGO : Taille réduite à 55px x 55px */
+        /* LOGO */
         #logo { 
             position: absolute; 
             top: 25px; 
@@ -358,6 +388,7 @@
             object-fit: contain; 
             z-index: 10;
             display: block;
+            pointer-events: none;
         }
 
         .text-box {
@@ -368,6 +399,7 @@
             bottom: 30px;
             right: 30px;
             transition: all 0.2s ease;
+            pointer-events: none;
         }
 
         #surtitre-output {
@@ -375,14 +407,14 @@
             font-weight: 900;
             font-size: 22px;
             color: #FFFFFF;
-            background-color: #E1001A; /* Rouge par défaut */
+            background-color: #E1001A;
             padding: 4px 10px;
             display: none;
             margin-bottom: 10px;
             position: relative;
             z-index: 3;
-            text-transform: none; /* En regular case */
-            text-shadow: none;   /* Sans drop shadow */
+            text-transform: none;
+            text-shadow: none;
             letter-spacing: 0.02em;
         }
 
@@ -396,7 +428,6 @@
             z-index: 2;
         }
 
-        /* Pas de fond blanc sous la typo sur Pinterest : Texte Blanc sans drop shadow */
         .title-line {
             font-family: 'Verlag-Bold', 'Verlag', sans-serif;
             font-weight: 900;
@@ -407,7 +438,7 @@
             background-color: transparent;
             padding: 0;
             display: inline;
-            text-shadow: none; /* Sans drop shadow */
+            text-shadow: none;
             word-break: break-word;
             overflow-wrap: break-word;
         }
@@ -420,7 +451,7 @@
 
     <!-- Bouton coin supérieur droit -->
     <button class="top-right-btn" id="externalLinkBtn" title="Menu principal">
-        <img id="menuIcon" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQZfurc7kMRTB_grnCqlXceY4Ozc_fz6uAzojr-SK0NkGEqxNCqI-S2wAs&s=10" alt="Icône menu">
+        <img id="menuIcon" src="images/imgbouton.png" alt="Icône menu">
     </button>
 
     <!-- MENU OVERLAY PLEIN ÉCRAN -->
@@ -429,15 +460,16 @@
             <div class="menu-title">Outils LABO</div>
             <div class="menu-divider"></div>
             <div class="menu-items-list">
-                <div class="menu-item" id="btnGoVignettes">Générateur de vignettes</div>
-                <div class="menu-item" id="btnGoPinterest">Générateur de contenu Pinterest</div>
+                <div class="menu-item" id="btnGoVignettes">Vignettes</div>
+                <div class="menu-item" id="btnGoPinterest">Pinterest</div>
+                <div class="menu-item" id="btnGoPinterest">Carrousel</div>
             </div>
         </div>
     </div>
 
     <div class="app-container">
         
-        <!-- Boutons de formats Pinterest (Carré 1:1 en premier) -->
+        <!-- Boutons de formats Pinterest -->
         <div class="format-tabs">
             <button class="tab-btn active" data-format="carre">Carré (1:1)</button>
             <button class="tab-btn" data-format="standard">Standard (2:3)</button>
@@ -478,6 +510,13 @@
                 <input type="file" id="imageUpload" accept="image/jpeg, image/png, image/webp" style="display: none;">
                 <div class="file-name-display" id="fileNameDisplay"></div>
 
+                <label for="zoomSlider">Zoom de l'image (<span id="zoomValueDisplay">100%</span>) :</label>
+                <input type="range" id="zoomSlider" min="10" max="250" value="100" step="1">
+
+                <div class="instruction-note">
+                    <strong>Astuce :</strong> Ajustez le zoom (avant ou arrière) et glissez l'image dans le cadre pour la repositionner.
+                </div>
+
                 <label>Enregistrer le Pin :</label>
                 <button class="btn-export" id="downloadBtn">Exporter en HD</button>
             </div>
@@ -499,6 +538,8 @@
     const imageUpload = document.getElementById('imageUpload');
     const bgImage = document.getElementById('bg-image');
     const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const zoomSlider = document.getElementById('zoomSlider');
+    const zoomValueDisplay = document.getElementById('zoomValueDisplay');
     const sectionSelect = document.getElementById('sectionSelect');
     const surtitreInput = document.getElementById('surtitreInput');
     const surtitreOutput = document.getElementById('surtitre-output');
@@ -513,6 +554,16 @@
     const menuOverlay = document.getElementById('menuOverlay');
     const btnGoVignettes = document.getElementById('btnGoVignettes');
     const btnGoPinterest = document.getElementById('btnGoPinterest');
+
+    // Déplacement 2D en pixels
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let currentX = 0, currentY = 0;
+    let zoomLevel = 1;
+
+    function applyImageTransform() {
+        bgImage.style.transform = `translate(-50%, -50%) translate(${currentX}px, ${currentY}px) scale(${zoomLevel})`;
+    }
 
     // Mappage des couleurs de section
     const sectionColors = {
@@ -556,19 +607,56 @@
         });
     });
 
+    // GESTION DU ZOOM
+    zoomSlider.addEventListener('input', () => {
+        zoomLevel = zoomSlider.value / 100;
+        zoomValueDisplay.textContent = `${zoomSlider.value}%`;
+        applyImageTransform();
+    });
+
+    // UPLOAD & COULEUR DYNAMIQUE (#f15fdb)
     imageUpload.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
             fileNameDisplay.textContent = file.name;
+            previewContainer.style.backgroundColor = '#f15fdb';
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 bgImage.src = e.target.result;
                 bgImage.style.display = 'block';
+                currentX = 0;
+                currentY = 0;
+                zoomLevel = 1;
+                zoomSlider.value = 100;
+                zoomValueDisplay.textContent = '100%';
+                applyImageTransform();
             };
             reader.readAsDataURL(file);
         } else {
             fileNameDisplay.textContent = '';
+            previewContainer.style.backgroundColor = '#969ca4';
         }
+    });
+
+    // GLISSER-DÉPOSER DE L'IMAGE
+    bgImage.addEventListener('mousedown', (e) => {
+        if (bgImage.style.display === 'none' || !bgImage.src) return;
+        isDragging = true;
+        startX = e.clientX - currentX;
+        startY = e.clientY - currentY;
+        e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        currentX = e.clientX - startX;
+        currentY = e.clientY - startY;
+        applyImageTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+        isDragging = false;
     });
 
     // Changement dynamique de la couleur du surtitre
@@ -612,14 +700,17 @@
             });
         }
 
-        // Affichage du dégradé seulement si au moins un des champs texte contient du texte
         const hasText = (surtitreText.trim() !== "") || (titleText.trim() !== "");
         bottomGradient.style.display = hasText ? "block" : "none";
     }
 
-    // Exportation HD pour Pinterest
+    // EXPORTATION HD AVEC ANGLES DROITS
     downloadBtn.addEventListener('click', () => {
+        previewContainer.style.borderRadius = '0px';
+
         html2canvas(previewContainer, { useCORS: true, scale: 2.2 }).then(canvas => {
+            previewContainer.style.borderRadius = '6px';
+
             const link = document.createElement('a');
             link.download = `pinterest-lapresse-${document.querySelector('.tab-btn.active').dataset.format}.png`;
             link.href = canvas.toDataURL('image/png');
